@@ -1,27 +1,32 @@
-import java.net.*;
 import java.io.*;
+import java.net.*;
 
-public class UDPServer {
-	private static ServerSocket listenSocket;
-
-	public static void main (String args[]) {
-		try{
-			
-			listenSocket = new ServerSocket(6789);
-			
-			while(true) {
-				Socket clientSocket = listenSocket.accept(); // Enables the socket to listen for connections
-				DataInputStream dataIn = new DataInputStream(clientSocket.getInputStream());
-				
-				String messageIn = (String)dataIn.readUTF(); // Reads in the encoded message a converts it to string.
-				System.out.println("Message Recieved: " + messageIn);
-				
-				// Sending the message back
-				DataOutputStream dataOut = new DataOutputStream(clientSocket.getOutputStream());
-				dataOut.writeUTF(messageIn);
-				System.out.println("Message Echoed: " + messageIn);
-			}
+public class UDPServer extends Thread {
+    public static void main(String[] args) {
+    	DatagramSocket socket;
+    	DatagramPacket packet;
+		try {
+			socket = new DatagramSocket(6789); // Creates a datagram socket on port 6789
+	    	byte[] buf = new byte[256];
+	    	
+	        while (true) {
+	            packet = new DatagramPacket(buf, buf.length); // Creates a datagram packet with a buffer
+	            socket.receive(packet); // Receives a datagram packet and puts it into buffer packet
+	            
+	            // Getting network metadata from the packet
+	            InetAddress address = packet.getAddress(); 
+	            int port = packet.getPort();
+	            String received = new String(packet.getData(), 0, packet.getLength());
+		        System.out.println("Message Received: " + received);
+	            
+	            // Uses network metadata from above to echo the message back
+	            packet = new DatagramPacket(buf, buf.length, address, port);
+	            socket.send(packet);
+	            String echo = new String(packet.getData(), 0, packet.getLength());
+		        System.out.println("Message Echoed: " + echo);
+	        }
 		}
-		catch(IOException e) {System.out.println("Listen :"+e.getMessage());}
-	}
+	    catch (SocketException e) { e.printStackTrace();}   
+		catch(IOException e) { System.out.println("Listen :"+e.getMessage()); }
+    }
 }
